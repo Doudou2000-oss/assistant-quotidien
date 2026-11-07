@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Assistant quotidien",
+  "short_name": "Mon assistant",
+  "description": "Organise ta journée, la maison et tes routines.",
+  "lang": "fr-FR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6f1",
+  "theme_color": "#f5f6f1",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
