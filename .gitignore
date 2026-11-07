@@ -1,0 +1,5 @@
+/assistant-quotidien-sauvegarde.json
+/.private-backup.json
+/server_stdout.log
+/server_stderr.log
+__pycache__/
