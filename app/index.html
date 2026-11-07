@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f6f1">
+  <meta name="description" content="Un espace personnel pour organiser sa journée, la maison et les routines.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Assistant quotidien">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <title>Assistant quotidien</title>
+  <style>
+    :root { color-scheme: light; --bg:#f5f6f1; --paper:#fff; --ink:#202920; --muted:#718076; --line:#e5e9e1; --green:#42664d; --green-light:#e9f0e6; --shadow:0 10px 30px rgba(28,50,30,.06); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; font-size:16px; line-height:1.45; }
+    button,input,textarea { font:inherit; }
+    button { cursor:pointer; }
+    .shell { width:min(100%,880px); margin:auto; padding:24px 22px 96px; }
+    .topline { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:24px; color:var(--muted); font-size:.88rem; }
+    .brand { display:flex; align-items:center; gap:9px; color:var(--ink); font-weight:700; letter-spacing:-.02em; }
+    .brand-mark { display:grid; place-items:center; width:34px; height:34px; border-radius:12px; background:#dce9d7; color:var(--green); }
+    .hero { padding:24px 26px; border-radius:24px; background:linear-gradient(120deg,#e3eddf,#f4f0df 72%,#f5e9df); margin-bottom:22px; }
+    .eyebrow { color:#55745d; font-size:.75rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin:5px 0 7px; font-size:clamp(1.7rem,5vw,2.35rem); letter-spacing:-.055em; line-height:1.1; }
+    h2 { font-size:1.23rem; letter-spacing:-.035em; margin:0 0 5px; }
+    h3 { font-size:1rem; margin:0 0 6px; }
+    .sub { margin:0; color:#59665b; max-width:56ch; }
+    .section-head { display:flex; align-items:end; justify-content:space-between; gap:12px; margin:24px 0 12px; }
+    .section-head p { color:var(--muted); margin:3px 0 0; font-size:.9rem; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .module { border:1px solid var(--line); background:var(--paper); border-radius:18px; padding:16px; min-height:124px; box-shadow:var(--shadow); }
+    .module-top { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px; }
+    .icon { font-size:1.25rem; }
+    .pill { border-radius:99px; padding:4px 9px; font-size:.72rem; font-weight:750; background:var(--green-light); color:var(--green); white-space:nowrap; }
+    .pill.off { color:#747e76; background:#f0f1ed; }
+    .muted { color:var(--muted); font-size:.9rem; }
+    .surface { background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:16px; margin:12px 0; }
+    .room { padding:15px 0; border-bottom:1px solid var(--line); }
+    .room:first-child { padding-top:0; }
+    .room:last-child { border-bottom:0; padding-bottom:0; }
+    .room-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+    .fields { display:grid; grid-template-columns:1fr 1.5fr; gap:9px; }
+    label { display:block; font-weight:650; font-size:.82rem; margin-bottom:5px; }
+    input[type=text],textarea { width:100%; border:1px solid #dbe1d8; background:#fff; color:var(--ink); border-radius:12px; padding:11px 12px; outline-color:#82a68a; }
+    textarea { min-height:82px; resize:vertical; }
+    .btn { border:0; background:var(--green); color:#fff; border-radius:12px; min-height:44px; padding:10px 15px; font-weight:700; }
+    .btn.secondary { color:var(--green); background:var(--green-light); }
+    .btn.danger { color:#9f4e38; background:#faeee9; }
+    .btn-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .routine { display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid var(--line); }
+    .routine:last-child { border:0; }
+    .routine input { width:20px; height:20px; accent-color:var(--green); }
+    .nav { position:fixed; z-index:10; bottom:0; left:0; right:0; padding:10px 16px max(10px,env(safe-area-inset-bottom)); background:rgba(255,255,255,.94); border-top:1px solid var(--line); backdrop-filter:blur(12px); }
+    .nav-inner { width:min(100%,680px); margin:auto; display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+    .nav button { border:0; background:transparent; color:var(--muted); border-radius:13px; padding:8px 4px; min-height:50px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2px; font-size:.75rem; }
+    .nav button.active { color:var(--green); background:var(--green-light); font-weight:750; }
+    .nav .nav-icon { font-size:1.05rem; }
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 0; border-bottom:1px solid var(--line); }
+    .toggle-row:last-child { border-bottom:0; }
+    .toggle-row input { width:22px; height:22px; accent-color:var(--green); flex:none; }
+    .notice { border-left:3px solid #d8aa65; background:#fbf6ea; color:#685b45; padding:12px 14px; border-radius:0 12px 12px 0; font-size:.9rem; margin-top:12px; }
+    .empty { text-align:center; padding:22px 12px; color:var(--muted); }
+    .hidden { display:none!important; }
+    .small { color:var(--muted); font-size:.82rem; }
+    @media(max-width:560px) { .shell{padding:15px 14px 94px}.hero{padding:20px 18px;border-radius:20px}.grid{grid-template-columns:1fr}.module{min-height:0}.fields{grid-template-columns:1fr}.topline{margin-bottom:17px} }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topline"><div class="brand"><span class="brand-mark">✦</span> Assistant quotidien</div><span id="today"></span></div>
+    <header class="hero"><div class="eyebrow">Ton espace personnel</div><h1>Bonjour, on avance à ton rythme.</h1><p class="sub">Choisis les sujets que tu veux suivre. Tu pourras ajouter du contexte et corriger les informations au fil du temps.</p></header>
+    <section id="page-home" class="page">
+      <div class="section-head"><div><h2>Mes grandes rubriques</h2><p>Active seulement celles dont tu as besoin.</p></div></div>
+      <div id="home-modules" class="grid"></div><div id="home-house"></div>
+      <div id="home-tasks"></div>
+      <div class="notice">Cette première version organise ton suivi sur cet appareil. Les accès Gmail et Google Agenda de ChatGPT ne sont pas automatiquement partagés avec cette app.</div>
+    </section>
+    <section id="page-house" class="page hidden">
+      <div class="section-head"><div><h2>Projet maison</h2><p>Suivi provisoire et modifiable pièce par pièce.</p></div></div>
+      <div class="surface"><div id="rooms"></div><div class="fields" style="margin-top:16px"><div><label for="new-room">Ajouter une pièce</label><input id="new-room" type="text" placeholder="Ex. entrée"></div><div><label for="new-room-status">État de départ</label><input id="new-room-status" type="text" placeholder="Ex. à préparer"></div></div><div class="btn-row"><button class="btn" id="add-room">Ajouter la pièce</button></div></div>
+      <div class="surface"><label for="house-note">Notes et points à vérifier</label><textarea id="house-note"></textarea><div class="btn-row"><button class="btn secondary" id="save-house">Enregistrer les changements</button></div></div>
+    </section>
+    <section id="page-chores" class="page hidden">
+      <div class="section-head"><div><h2>Tâches ménagères</h2><p>Construis une routine souple, sans planning imposé.</p></div></div>
+      <div class="surface"><div class="fields"><div><label for="new-chore">Nouvelle tâche</label><input id="new-chore" type="text" placeholder="Ex. lancer une lessive"></div><div><label for="chore-frequency">Fréquence (facultative)</label><input id="chore-frequency" type="text" placeholder="Ex. chaque semaine"></div></div><div class="btn-row"><button class="btn" id="add-chore">Ajouter la tâche</button></div></div>
+      <div class="surface"><div id="chores"></div></div>
+    </section>
+    <section id="page-connections" class="page hidden">
+      <div class="section-head"><div><h2>E-mails et agenda</h2><p>Les connexions seront ajoutées dans une étape dédiée.</p></div></div>
+      <div class="grid"><div class="module"><div class="module-top"><span class="icon">✉️</span><span class="pill off">À relier</span></div><h3>Gmail</h3><div class="muted">Tri assisté et repérage des messages importants. Aucune suppression sans confirmation.</div></div>
+      <div class="module"><div class="module-top"><span class="icon">🗓️</span><span class="pill off">À relier</span></div><h3>Google Agenda</h3><div class="muted">Rendez-vous, conflits et temps disponibles dans le bilan du jour.</div></div></div>
+      <div class="notice">Les comptes connectés à ChatGPT ne sont pas utilisés par cette application. Une connexion Google sécurisée et séparée est nécessaire.</div>
+    </section>
+    <section id="page-settings" class="page hidden">
+      <div class="section-head"><div><h2>Mes rubriques</h2><p>Tu peux les activer ou les mettre en pause quand tu veux.</p></div></div>
+      <div class="surface" id="module-settings"></div><div class="small">Les préférences et les listes sont conservées dans le navigateur de cet appareil.</div>
+      <div class="section-head"><div><h2>Mes données</h2><p>Fais une copie de secours ou restaure une sauvegarde.</p></div></div>
+      <div class="surface"><div class="btn-row" style="margin-top:0"><button class="btn secondary" id="export-data">Exporter mes données</button><label class="btn secondary" for="import-data" style="display:inline-flex;align-items:center;cursor:pointer">Importer une sauvegarde</label><input id="import-data" type="file" accept="application/json,.json" hidden></div><p class="small" style="margin:12px 0 0">La sauvegarde reste un fichier sur ton appareil.</p></div>
+    </section>
+  </main>
+  <nav class="nav" aria-label="Navigation principale"><div class="nav-inner">
+    <button class="active" data-page="home"><span class="nav-icon">☀️</span>Aujourd'hui</button><button data-page="house"><span class="nav-icon">🏠</span>Maison</button><button data-page="chores"><span class="nav-icon">✓</span>Routines</button><button data-page="connections"><span class="nav-icon">↔</span>Services</button><button data-page="settings"><span class="nav-icon">⚙️</span>Rubriques</button>
+  </div></nav>
+  <script>
+    const MODULES=[{id:'day',name:'Ma journée',icon:'☀️',desc:'Priorités et petits rappels'},{id:'email',name:'E-mails',icon:'✉️',desc:'Repérage et tri assisté'},{id:'calendar',name:'Agenda',icon:'🗓️',desc:'Rendez-vous et disponibilité'},{id:'house',name:'Projet maison',icon:'🏠',desc:'Avancement par pièce et prochaines étapes'},{id:'chores',name:'Tâches ménagères',icon:'✓',desc:'Routines souples et tâches à répartir'}];
+    const initial={modules:{day:true,email:true,calendar:true,house:true,chores:true},rooms:[],chores:[],dayTasks:[],houseNote:''};
+    const STORAGE_KEY='assistant-quotidien-v1';let state;
+    try{state=JSON.parse(localStorage.getItem(STORAGE_KEY))||structuredClone(initial)}catch(e){state=structuredClone(initial)}
+    if(!Array.isArray(state.dayTasks))state.dayTasks=[];
+    function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+    function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    document.getElementById('today').textContent=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
+    function renderHome(){const host=document.getElementById('home-modules');host.innerHTML=MODULES.filter(m=>state.modules[m.id]).map(m=>'<article class="module"><div class="module-top"><span class="icon">'+m.icon+'</span><span class="pill">Activée</span></div><h3>'+m.name+'</h3><div class="muted">'+m.desc+'</div></article>').join('')||'<div class="surface empty">Aucune rubrique active. Choisis-en une dans Rubriques.</div>';const ongoing=state.rooms.filter(r=>r.status.toLowerCase().includes('placo'));document.getElementById('home-house').innerHTML=state.modules.house?'<div class="section-head"><div><h2>À suivre dans la maison</h2><p>'+ongoing.length+' pièces avec placo en cours</p></div><button class="btn secondary" data-open-house>Voir le projet</button></div><div class="surface">'+ongoing.map(r=>'<div class="room"><div class="room-head"><strong>'+esc(r.name)+'</strong><span class="pill">En cours</span></div><div class="muted">'+esc(r.next)+'</div></div>').join('')+'</div>':'';document.querySelector('[data-open-house]')?.addEventListener('click',()=>showPage('house'));renderDayTasks()}
+    function renderDayTasks(){const host=document.getElementById('home-tasks');if(!state.modules.day){host.innerHTML='';return}host.innerHTML='<div class="section-head"><div><h2>Mes priorités du jour</h2><p>'+state.dayTasks.filter(t=>!t.done).length+' à faire aujourd’hui</p></div></div><div class="surface"><div class="fields"><div><label for="new-day-task">Ajouter une priorité</label><input id="new-day-task" type="text" placeholder="Ex. appeler un artisan"></div><div class="btn-row" style="align-items:end;margin-top:0"><button class="btn" id="add-day-task">Ajouter</button></div></div><div id="day-task-list"></div></div>';const list=document.getElementById('day-task-list');list.innerHTML=state.dayTasks.length?state.dayTasks.map((task,i)=>'<label class="routine"><input type="checkbox" data-day-done="'+i+'" '+(task.done?'checked':'')+'><span style="flex:1"><strong style="'+(task.done?'text-decoration:line-through;color:#718076':'')+'">'+esc(task.title)+'</strong></span><button type="button" class="btn danger" data-day-remove="'+i+'">Retirer</button></label>').join(''):'<div class="empty">Ajoute une priorité quand tu veux.</div>';document.getElementById('add-day-task')?.addEventListener('click',()=>{const input=document.getElementById('new-day-task');const title=input.value.trim();if(!title)return;state.dayTasks.push({title:title,done:false});save();renderDayTasks()});document.querySelectorAll('[data-day-done]').forEach(el=>el.addEventListener('change',()=>{state.dayTasks[Number(el.dataset.dayDone)].done=el.checked;save();renderDayTasks()}));document.querySelectorAll('[data-day-remove]').forEach(el=>el.addEventListener('click',()=>{state.dayTasks.splice(Number(el.dataset.dayRemove),1);save();renderDayTasks()}))}
+    function renderSettings(){document.getElementById('module-settings').innerHTML=MODULES.map(m=>'<label class="toggle-row"><span><strong>'+m.icon+' '+m.name+'</strong><br><span class="muted">'+m.desc+'</span></span><input type="checkbox" data-module="'+m.id+'" '+(state.modules[m.id]?'checked':'')+' aria-label="Activer '+m.name+'"></label>').join('');document.querySelectorAll('[data-module]').forEach(el=>el.addEventListener('change',()=>{state.modules[el.dataset.module]=el.checked;save();render()}))}
+    function renderRooms(){document.getElementById('rooms').innerHTML=state.rooms.map((r,i)=>'<div class="room"><div class="room-head"><strong>'+esc(r.name)+'</strong><button class="btn danger" data-remove-room="'+i+'">Retirer</button></div><div class="fields"><div><label for="status-'+i+'">État</label><input id="status-'+i+'" type="text" data-room-status="'+i+'" value="'+esc(r.status)+'"></div><div><label for="next-'+i+'">Prochaine étape</label><input id="next-'+i+'" type="text" data-room-next="'+i+'" value="'+esc(r.next)+'"></div></div></div>').join('');document.getElementById('house-note').value=state.houseNote;document.querySelectorAll('[data-room-status]').forEach(el=>el.addEventListener('change',()=>{state.rooms[Number(el.dataset.roomStatus)].status=el.value;save();renderHome()}));document.querySelectorAll('[data-room-next]').forEach(el=>el.addEventListener('change',()=>{state.rooms[Number(el.dataset.roomNext)].next=el.value;save();renderHome()}));document.querySelectorAll('[data-remove-room]').forEach(el=>el.addEventListener('click',()=>{state.rooms.splice(Number(el.dataset.removeRoom),1);save();renderRooms();renderHome()}))}
+    function renderChores(){const host=document.getElementById('chores');host.innerHTML=state.chores.length?state.chores.map((c,i)=>'<label class="routine"><input type="checkbox" data-chore-done="'+i+'" '+(c.done?'checked':'')+'><span style="flex:1"><strong style="'+(c.done?'text-decoration:line-through;color:#718076':'')+'">'+esc(c.title)+'</strong><br><span class="small">'+esc(c.frequency||'Sans fréquence définie')+'</span></span><button type="button" class="btn danger" data-remove-chore="'+i+'">Retirer</button></label>').join(''):'<div class="empty">Ta liste est vide pour le moment. Ajoute des tâches quand tu le souhaites.</div>';document.querySelectorAll('[data-chore-done]').forEach(el=>el.addEventListener('change',()=>{state.chores[Number(el.dataset.choreDone)].done=el.checked;save();renderChores()}));document.querySelectorAll('[data-remove-chore]').forEach(el=>el.addEventListener('click',()=>{state.chores.splice(Number(el.dataset.removeChore),1);save();renderChores()}))}
+    function render(){renderHome();renderSettings();renderRooms();renderChores()}
+    function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));document.getElementById('page-'+name).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===name))}
+    document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+    document.getElementById('add-room').addEventListener('click',()=>{const name=document.getElementById('new-room').value.trim();if(!name)return;state.rooms.push({name:name,status:document.getElementById('new-room-status').value.trim()||'À préciser',next:'À préciser'});document.getElementById('new-room').value='';document.getElementById('new-room-status').value='';save();renderRooms();renderHome()});
+    document.getElementById('save-house').addEventListener('click',()=>{state.houseNote=document.getElementById('house-note').value;save()});
+    document.getElementById('add-chore').addEventListener('click',()=>{const title=document.getElementById('new-chore').value.trim();if(!title)return;state.chores.push({title:title,frequency:document.getElementById('chore-frequency').value.trim(),done:false});document.getElementById('new-chore').value='';document.getElementById('chore-frequency').value='';save();renderChores()});
+    document.getElementById('export-data').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='assistant-quotidien-sauvegarde.json';link.click();URL.revokeObjectURL(url)});
+    document.getElementById('import-data').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{const imported=JSON.parse(await file.text());if(!imported||!Array.isArray(imported.rooms)||!Array.isArray(imported.chores)||!imported.modules)throw new Error('format');state={...structuredClone(initial),...imported,dayTasks:Array.isArray(imported.dayTasks)?imported.dayTasks:[]};save();render();event.target.value='';alert('Sauvegarde importée.')}catch(e){event.target.value='';alert('Ce fichier ne ressemble pas à une sauvegarde de l’assistant quotidien.')}});
+    render();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
