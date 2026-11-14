@@ -11,6 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon.svg">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <title>Assistant quotidien</title>
   <style>
     :root { color-scheme: light; --bg:#f5f6f1; --paper:#fff; --ink:#202920; --muted:#718076; --line:#e5e9e1; --green:#42664d; --green-light:#e9f0e6; --shadow:0 10px 30px rgba(28,50,30,.06); }
@@ -68,6 +69,10 @@
     .briefing-field textarea { min-height:110px; }
     .briefing-output { white-space:pre-wrap; border-radius:14px; background:#f7f8f5; border:1px solid var(--line); padding:14px; min-height:110px; font:inherit; }
     .briefing-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .connection-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .connection-status { margin-top:10px; min-height:1.4em; color:var(--muted); font-size:.88rem; }
+    .connection-status.error { color:#9f4e38; }
+    .connection-status.success { color:var(--green); }
 
     .hidden { display:none!important; }
     .small { color:var(--muted); font-size:.82rem; }
@@ -108,10 +113,22 @@
       <div class="surface"><div id="chores"></div></div>
     </section>
     <section id="page-connections" class="page hidden">
-      <div class="section-head"><div><h2>E-mails et agenda</h2><p>Les connexions seront ajoutées dans une étape dédiée.</p></div></div>
-      <div class="grid"><div class="module"><div class="module-top"><span class="icon">✉️</span><span class="pill off">À relier</span></div><h3>Gmail</h3><div class="muted">Tri assisté et repérage des messages importants. Aucune suppression sans confirmation.</div></div>
-      <div class="module"><div class="module-top"><span class="icon">🗓️</span><span class="pill off">À relier</span></div><h3>Google Agenda</h3><div class="muted">Rendez-vous, conflits et temps disponibles dans le bilan du jour.</div></div></div>
-      <div class="notice">Les comptes connectés à ChatGPT ne sont pas utilisés par cette application. Une connexion Google sécurisée et séparée est nécessaire.</div>
+      <div class="section-head"><div><h2>E-mails et agenda</h2><p>Connexion Google personnelle, limitée à la lecture.</p></div></div>
+      <div class="surface">
+        <label for="google-client-id">Identifiant client OAuth Google</label>
+        <input id="google-client-id" type="text" autocomplete="off" placeholder="123456789.apps.googleusercontent.com">
+        <div class="small">Cet identifiant public se crée dans Google Cloud. Ne colle jamais de mot de passe ni de clé secrète ici.</div>
+        <div class="connection-actions"><button class="btn secondary" id="save-google-client">Enregistrer l’identifiant</button><button class="btn" id="connect-google">Connecter mon compte Google</button><button class="btn secondary" id="refresh-google" disabled>Actualiser le bilan</button><button class="btn danger" id="disconnect-google">Déconnecter</button></div>
+        <p id="google-status" class="connection-status" role="status" aria-live="polite">Aucun compte connecté dans cette session.</p>
+      </div>
+      <div class="surface"><h3>Créer l’accès Google</h3><ol class="small">
+        <li>Dans <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>, crée ou sélectionne un projet.</li>
+        <li>Active les API <strong>Gmail API</strong> et <strong>Google Calendar API</strong>.</li>
+        <li>Dans Google Auth Platform, configure l’écran de consentement. Pour commencer, choisis le mode test et ajoute ton adresse Gmail comme utilisateur test.</li>
+        <li>Crée un identifiant OAuth de type <strong>Application Web</strong>. Dans « Origines JavaScript autorisées », ajoute exactement <code>https://doudou2000-oss.github.io</code>.</li>
+        <li>Copie l’identifiant client (il se termine par <code>.apps.googleusercontent.com</code>) dans le champ ci-dessus, enregistre-le, puis connecte ton compte.</li>
+      </ol><p class="small">Google peut afficher un avertissement « application non validée » pendant les essais. Le mode test est destiné à ton propre compte; une diffusion plus large nécessiterait la validation OAuth de Google, notamment pour l’accès Gmail.</p></div>
+      <div class="notice">L’application lit l’agenda du jour sélectionné et jusqu’à 20 messages de la boîte de réception (objet, expéditeur, date et statut lu/non lu). Elle ne lit pas le corps ni les pièces jointes des mails, et ne déplace, n’archive, ne supprime et n’envoie rien. Le jeton Google reste en mémoire jusqu’à fermeture/rechargement ou expiration. Les éléments importés dans le bilan sont enregistrés localement dans ce navigateur, jamais sur le dépôt public.</div>
     </section>
     <section id="page-settings" class="page hidden">
       <div class="section-head"><div><h2>Mes rubriques</h2><p>Tu peux les activer ou les mettre en pause quand tu veux.</p></div></div>
@@ -125,10 +142,11 @@
   </div></nav>
   <script>
     const MODULES=[{id:'day',name:'Ma journée',icon:'☀️',desc:'Priorités et petits rappels'},{id:'email',name:'E-mails',icon:'✉️',desc:'Repérage et tri assisté'},{id:'calendar',name:'Agenda',icon:'🗓️',desc:'Rendez-vous et disponibilité'},{id:'house',name:'Projet maison',icon:'🏠',desc:'Avancement par pièce et prochaines étapes'},{id:'chores',name:'Tâches ménagères',icon:'✓',desc:'Routines souples et tâches à répartir'}];
-    const initial={modules:{day:true,email:true,calendar:true,house:true,chores:true},rooms:[],chores:[],dayTasks:[],houseNote:'',briefing:{date:'',events:'',emails:'',report:'',reportDate:''}};
+    const initial={modules:{day:true,email:true,calendar:true,house:true,chores:true},rooms:[],chores:[],dayTasks:[],houseNote:'',googleClientId:'',briefing:{date:'',events:'',emails:'',report:'',reportDate:''}};
     const STORAGE_KEY='assistant-quotidien-v1';let state;
     try{state=JSON.parse(localStorage.getItem(STORAGE_KEY))||structuredClone(initial)}catch(e){state=structuredClone(initial)}
     if(!Array.isArray(state.dayTasks))state.dayTasks=[];
+    if(typeof state.googleClientId!=='string')state.googleClientId='';
     if(!state.briefing||typeof state.briefing!=='object')state.briefing={date:'',events:'',emails:'',report:'',reportDate:''};
     state.briefing={date:'',events:'',emails:'',report:'',reportDate:'',...state.briefing};
     function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
@@ -187,6 +205,76 @@
     ['brief-date','brief-events','brief-emails'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{state.briefing.date=document.getElementById('brief-date').value;state.briefing.events=document.getElementById('brief-events').value;state.briefing.emails=document.getElementById('brief-emails').value;save()}));
     document.getElementById('generate-brief').addEventListener('click',makeBriefing);
     document.getElementById('copy-brief').addEventListener('click',async()=>{const value=state.briefing.report;if(!value){document.getElementById('brief-copy-status').textContent='Prépare d’abord le bilan.';return}try{await navigator.clipboard.writeText(value);document.getElementById('brief-copy-status').textContent='Bilan copié.'}catch(e){document.getElementById('brief-copy-status').textContent='La copie automatique n’est pas disponible sur ce navigateur.'}});
+    const GOOGLE_SCOPES=["https://www.googleapis.com/auth/gmail.metadata","https://www.googleapis.com/auth/calendar.events.readonly"];
+    let googleAccessToken=null;
+    let googleTokenClient=null;
+    function setGoogleStatus(message,kind=""){const el=document.getElementById("google-status");el.textContent=message;el.className="connection-status"+(kind?" "+kind:"")}
+    function saveGoogleClientId(){state.googleClientId=document.getElementById("google-client-id").value.trim();save();setGoogleStatus(state.googleClientId?"Identifiant OAuth enregistré sur cet appareil.":"Identifiant effacé.",state.googleClientId?"success":"")}
+    function connectGoogle(){
+      const clientId=document.getElementById("google-client-id").value.trim();
+      if(!clientId){setGoogleStatus("Ajoute d’abord l’identifiant client OAuth créé dans Google Cloud.", "error");return}
+      if(!clientId.endsWith(".apps.googleusercontent.com")){setGoogleStatus("Cet identifiant ne semble pas être un identifiant client OAuth Google.", "error");return}
+      if(!window.google?.accounts?.oauth2){setGoogleStatus("La fenêtre de connexion Google n’est pas encore chargée. Recharge la page puis réessaie.", "error");return}
+      state.googleClientId=clientId;save();
+      googleTokenClient=google.accounts.oauth2.initTokenClient({client_id:clientId,scope:GOOGLE_SCOPES.join(" "),include_granted_scopes:true,callback:async response=>{
+        if(response.error||!response.access_token){googleAccessToken=null;setGoogleStatus("Connexion non accordée. Tu peux réessayer quand tu veux.", "error");return}
+        googleAccessToken=response.access_token;document.getElementById("refresh-google").disabled=false;
+        setGoogleStatus("Compte autorisé pour cette session. Lecture de l’agenda et des e-mails…");
+        try{await refreshGoogleData()}catch(error){setGoogleStatus(error.message||"La lecture Google a échoué. Réessaie ou reconnecte le compte.", "error")}
+      },error_callback:error=>{setGoogleStatus(error?.type==="popup_closed"?"Fenêtre Google fermée avant la connexion.":"La fenêtre de connexion Google n’a pas pu s’ouvrir. Autorise les fenêtres contextuelles puis réessaie.", "error")}});
+      googleTokenClient.requestAccessToken({prompt:"consent"});
+    }
+    async function googleGet(url){
+      if(!googleAccessToken)throw new Error("Reconnecte ton compte Google pour actualiser le bilan.");
+      const response=await fetch(url,{headers:{Authorization:"Bearer "+googleAccessToken}});
+      const data=await response.json().catch(()=>({}));
+      if(response.status===401){googleAccessToken=null;document.getElementById("refresh-google").disabled=true;throw new Error("L’autorisation Google a expiré. Reconnecte ton compte pour continuer.")}
+      if(!response.ok)throw new Error(data.error?.message||"Google a refusé la lecture. Vérifie que les deux API sont activées et que l’identifiant OAuth est bien configuré.");
+      return data;
+    }
+    function eventTime(value,timeZone){return new Intl.DateTimeFormat("fr-FR",{hour:"2-digit",minute:"2-digit",timeZone}).format(new Date(value))}
+    function classifyGoogleMail(message){
+      const headers=message.payload?.headers||[];
+      const getHeader=name=>headers.find(h=>h.name?.toLowerCase()===name.toLowerCase())?.value||"";
+      const subject=getHeader("Subject")||"(sans objet)";
+      const from=getHeader("From")||"expéditeur inconnu";
+      const received=message.internalDate?new Intl.DateTimeFormat("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).format(new Date(Number(message.internalDate))):getHeader("Date");
+      const urgent=/\b(urgent|urgence|aujourd.?hui|immédiat(?:ement)?|dernier délai|date limite|échéance|expire|expiré|rappel de paiement)\b/i.test(subject);
+      const key=urgent?"urgent":(message.labelIds||[]).includes("UNREAD")?"à traiter":"à lire plus tard";
+      const why=urgent?"terme d’urgence ou échéance repéré dans l’objet":key==="à traiter"?"message non lu":"message reçu, sans urgence évidente repérée";
+      return key+": "+subject+" — "+from+(received?" — reçu "+received:"")+" — motif : "+why;
+    }
+    async function refreshGoogleData(){
+      if(!googleAccessToken)throw new Error("Reconnecte ton compte Google pour actualiser le bilan.");
+      const date=document.getElementById("brief-date").value||localDateValue();
+      const start=new Date(date+"T00:00:00");const next=new Date(start);next.setDate(next.getDate()+1);
+      const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"Europe/Paris";
+      const calendarParams=new URLSearchParams({timeMin:start.toISOString(),timeMax:next.toISOString(),singleEvents:"true",orderBy:"startTime",maxResults:"250",timeZone:tz});
+      const calendar=await googleGet("https://www.googleapis.com/calendar/v3/calendars/primary/events?"+calendarParams.toString());
+      const eventLines=(calendar.items||[]).map(event=>{
+        const title=event.summary||"Événement sans titre";
+        if(event.start?.date)return "Toute la journée — "+title;
+        if(!event.start?.dateTime||!event.end?.dateTime)return title;
+        const zone=calendar.timeZone||tz;
+        return eventTime(event.start.dateTime,zone)+"-"+eventTime(event.end.dateTime,zone)+" "+title;
+      });
+      const listParams=new URLSearchParams({maxResults:"20"});listParams.append("labelIds","INBOX");
+      const list=await googleGet("https://gmail.googleapis.com/gmail/v1/users/me/messages?"+listParams.toString());
+      const messages=await Promise.all((list.messages||[]).map(item=>googleGet("https://gmail.googleapis.com/gmail/v1/users/me/messages/"+encodeURIComponent(item.id)+"?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date")));
+      const emailLines=messages.map(classifyGoogleMail);
+      document.getElementById("brief-events").value=eventLines.join("\n");
+      document.getElementById("brief-emails").value=emailLines.join("\n");
+      for(const id of ["brief-date","brief-events","brief-emails"])document.getElementById(id).dispatchEvent(new Event("input",{bubbles:true}));
+      makeBriefing();
+      setGoogleStatus("Bilan actualisé : "+eventLines.length+" rendez-vous et "+emailLines.length+" e-mails examinés. Les éléments importés sont enregistrés dans ce navigateur.", "success");
+    }
+    function disconnectGoogle(){googleAccessToken=null;googleTokenClient=null;document.getElementById("refresh-google").disabled=true;setGoogleStatus("Compte déconnecté de cette session. Les lignes déjà importées restent dans le bilan local jusqu’à leur effacement.");}
+    document.getElementById("google-client-id").value=state.googleClientId||"";
+    document.getElementById("save-google-client").addEventListener("click",saveGoogleClientId);
+    document.getElementById("connect-google").addEventListener("click",connectGoogle);
+    document.getElementById("refresh-google").addEventListener("click",async()=>{try{await refreshGoogleData()}catch(error){setGoogleStatus(error.message||"La lecture Google a échoué.", "error")}});
+    document.getElementById("disconnect-google").addEventListener("click",disconnectGoogle);
+    document.getElementById("brief-date").addEventListener("change",()=>{if(googleAccessToken)refreshGoogleData().catch(error=>setGoogleStatus(error.message,"error"))});
     render();
   </script>
   <script>

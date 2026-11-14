@@ -1,4 +1,4 @@
-const CACHE = 'assistant-quotidien-v2';
+const CACHE = 'assistant-quotidien-v3';
 const ROOT = new URL('./', self.registration.scope);
 const APP_FILES = [ROOT.href, new URL('index.html', ROOT).href, new URL('manifest.webmanifest', ROOT).href, new URL('icon.svg', ROOT).href];
 
