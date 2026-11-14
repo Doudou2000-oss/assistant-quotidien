@@ -158,7 +158,7 @@
       state.briefing={...state.briefing,date:date,events:eventText,emails:emailText};
       const rows=eventText?eventText.split(/\n+/).map(x=>x.trim()).filter(Boolean):[];
       const events=[],unparsed=[],allDay=[];
-      rows.forEach(line=>{const allday=line.match(/^(?:toute la journée|journée entière)\s*[-:–]\s*(.+)$/i);if(allday){allDay.push(allday[1]);return}const m=line.match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s+(.+)$/);if(!m){unparsed.push(line);return}const start=parseReportTime(m[1]),end=parseReportTime(m[2]);if(start===null||end===null||end<=start){unparsed.push(line);return}events.push({start,end,title:m[3]})});
+      rows.forEach(line=>{const allday=line.match(/^(?:toute la journée|journée entière)\s*[-:–—]\s*(.+)$/i);if(allday){allDay.push(allday[1]);return}const m=line.match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s+(.+)$/);if(!m){unparsed.push(line);return}const start=parseReportTime(m[1]),end=parseReportTime(m[2]);if(start===null||end===null||end<=start){unparsed.push(line);return}events.push({start,end,title:m[3]})});
       events.sort((a,b)=>a.start-b.start);
       const out=['BILAN DU '+formatReportDate(date).toLocaleUpperCase('fr-FR'),'','AGENDA'];
       if(events.length===0&&unparsed.length===0)out.push('Aucun rendez-vous renseigné dans l’application.');
