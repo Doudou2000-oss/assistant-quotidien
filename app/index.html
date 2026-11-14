@@ -161,7 +161,7 @@
       rows.forEach(line=>{const allday=line.match(/^(?:toute la journée|journée entière)\s*[-:–—]\s*(.+)$/i);if(allday){allDay.push(allday[1]);return}const m=line.match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s+(.+)$/);if(!m){unparsed.push(line);return}const start=parseReportTime(m[1]),end=parseReportTime(m[2]);if(start===null||end===null||end<=start){unparsed.push(line);return}events.push({start,end,title:m[3]})});
       events.sort((a,b)=>a.start-b.start);
       const out=['BILAN DU '+formatReportDate(date).toLocaleUpperCase('fr-FR'),'','AGENDA'];
-      if(events.length===0&&unparsed.length===0)out.push('Aucun rendez-vous renseigné dans l’application.');
+      if(events.length===0&&allDay.length===0&&unparsed.length===0)out.push('Aucun rendez-vous renseigné dans l’application.');
       events.forEach(e=>out.push(reportClock(e.start)+'–'+reportClock(e.end)+' · '+e.title));allDay.forEach(title=>out.push('Toute la journée · '+title));
       const conflicts=[];let latest=null;
       events.forEach(e=>{if(latest&&e.start<latest.end)conflicts.push(reportClock(e.start)+' · chevauchement entre « '+latest.title+' » et « '+e.title+' »');if(!latest||e.end>latest.end)latest=e});
