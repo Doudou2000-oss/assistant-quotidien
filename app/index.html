@@ -55,7 +55,7 @@
     .routine:last-child { border:0; }
     .routine input { width:20px; height:20px; accent-color:var(--green); }
     .nav { position:fixed; z-index:10; bottom:0; left:0; right:0; padding:10px 16px max(10px,env(safe-area-inset-bottom)); background:rgba(255,255,255,.94); border-top:1px solid var(--line); backdrop-filter:blur(12px); }
-    .nav-inner { width:min(100%,680px); margin:auto; display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+    .nav-inner { width:min(100%,680px); margin:auto; display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
     .nav button { border:0; background:transparent; color:var(--muted); border-radius:13px; padding:8px 4px; min-height:50px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2px; font-size:.75rem; }
     .nav button.active { color:var(--green); background:var(--green-light); font-weight:750; }
     .nav .nav-icon { font-size:1.05rem; }
@@ -64,6 +64,11 @@
     .toggle-row input { width:22px; height:22px; accent-color:var(--green); flex:none; }
     .notice { border-left:3px solid #d8aa65; background:#fbf6ea; color:#685b45; padding:12px 14px; border-radius:0 12px 12px 0; font-size:.9rem; margin-top:12px; }
     .empty { text-align:center; padding:22px 12px; color:var(--muted); }
+    .briefing-field { margin:14px 0; }
+    .briefing-field textarea { min-height:110px; }
+    .briefing-output { white-space:pre-wrap; border-radius:14px; background:#f7f8f5; border:1px solid var(--line); padding:14px; min-height:110px; font:inherit; }
+    .briefing-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+
     .hidden { display:none!important; }
     .small { color:var(--muted); font-size:.82rem; }
     @media(max-width:560px) { .shell{padding:15px 14px 94px}.hero{padding:20px 18px;border-radius:20px}.grid{grid-template-columns:1fr}.module{min-height:0}.fields{grid-template-columns:1fr}.topline{margin-bottom:17px} }
@@ -78,6 +83,19 @@
       <div id="home-modules" class="grid"></div><div id="home-house"></div>
       <div id="home-tasks"></div>
       <div class="notice">Cette première version organise ton suivi sur cet appareil. Les accès Gmail et Google Agenda de ChatGPT ne sont pas automatiquement partagés avec cette app.</div>
+    </section>
+
+    <section id="page-briefing" class="page hidden">
+      <div class="section-head"><div><h2>Bilan du jour</h2><p>Un résumé clair à partir des éléments que tu renseignes.</p></div></div>
+      <div class="notice">Gmail et Google Agenda ne sont pas encore reliés à cette application. En attendant une connexion Google séparée, colle ici les rendez-vous et les messages à suivre. Les données et le bilan restent dans le navigateur de cet appareil.</div>
+      <div class="surface">
+        <div class="briefing-field"><label for="brief-date">Date du bilan</label><input id="brief-date" type="date"></div>
+        <div class="briefing-field"><label for="brief-events">Rendez-vous de l’agenda</label><textarea id="brief-events" placeholder="Un rendez-vous par ligne, au format : 09:00-10:00 Nom du rendez-vous&#10;Pour un événement sans horaire : Toute la journée — intitulé"></textarea><div class="small">Les conflits et les créneaux libres entre les rendez-vous seront repérés quand les horaires sont indiqués.</div></div>
+        <div class="briefing-field"><label for="brief-emails">Messages Gmail demandant une attention</label><textarea id="brief-emails" placeholder="Un message par ligne :&#10;urgent: sujet — pourquoi agir vite&#10;à traiter: sujet — action demandée&#10;à lire plus tard: sujet"></textarea><div class="small">Indique la catégorie au début de chaque ligne. Aucun message ne sera modifié ou envoyé.</div></div>
+        <div class="briefing-actions"><button class="btn" id="generate-brief">Préparer le bilan</button><button class="btn secondary" id="copy-brief">Copier le bilan</button></div>
+      </div>
+      <div class="surface"><h3>Ton bilan</h3><div id="brief-output" class="briefing-output" aria-live="polite">Le bilan apparaîtra ici.</div><p id="brief-copy-status" class="small" aria-live="polite"></p></div>
+      <div class="surface"><h3>Projet maison</h3><p class="small">Le bilan reprend uniquement les pièces, étapes et notes que tu as saisies dans la rubrique Maison. Tu peux les compléter ou les corriger quand tu veux.</p><div id="brief-house"></div></div>
     </section>
     <section id="page-house" class="page hidden">
       <div class="section-head"><div><h2>Projet maison</h2><p>Suivi provisoire et modifiable pièce par pièce.</p></div></div>
@@ -103,14 +121,14 @@
     </section>
   </main>
   <nav class="nav" aria-label="Navigation principale"><div class="nav-inner">
-    <button class="active" data-page="home"><span class="nav-icon">☀️</span>Aujourd'hui</button><button data-page="house"><span class="nav-icon">🏠</span>Maison</button><button data-page="chores"><span class="nav-icon">✓</span>Routines</button><button data-page="connections"><span class="nav-icon">↔</span>Services</button><button data-page="settings"><span class="nav-icon">⚙️</span>Rubriques</button>
+    <button class="active" data-page="home"><span class="nav-icon">☀️</span>Aujourd'hui</button><button data-page="briefing"><span class="nav-icon">📝</span>Bilan</button><button data-page="house"><span class="nav-icon">🏠</span>Maison</button><button data-page="chores"><span class="nav-icon">✓</span>Routines</button><button data-page="connections"><span class="nav-icon">↔</span>Services</button><button data-page="settings"><span class="nav-icon">⚙️</span>Rubriques</button>
   </div></nav>
   <script>
     const MODULES=[{id:'day',name:'Ma journée',icon:'☀️',desc:'Priorités et petits rappels'},{id:'email',name:'E-mails',icon:'✉️',desc:'Repérage et tri assisté'},{id:'calendar',name:'Agenda',icon:'🗓️',desc:'Rendez-vous et disponibilité'},{id:'house',name:'Projet maison',icon:'🏠',desc:'Avancement par pièce et prochaines étapes'},{id:'chores',name:'Tâches ménagères',icon:'✓',desc:'Routines souples et tâches à répartir'}];
-    const initial={modules:{day:true,email:true,calendar:true,house:true,chores:true},rooms:[],chores:[],dayTasks:[],houseNote:''};
+    const initial={modules:{day:true,email:true,calendar:true,house:true,chores:true},rooms:[],chores:[],dayTasks:[],houseNote:'',briefing:{date:'',events:'',emails:'',report:'',reportDate:''}};
     const STORAGE_KEY='assistant-quotidien-v1';let state;
     try{state=JSON.parse(localStorage.getItem(STORAGE_KEY))||structuredClone(initial)}catch(e){state=structuredClone(initial)}
-    if(!Array.isArray(state.dayTasks))state.dayTasks=[];
+    if(!Array.isArray(state.dayTasks))state.dayTasks=[];\n    if(!state.briefing||typeof state.briefing!=='object')state.briefing={date:'',events:'',emails:'',report:'',reportDate:''};\n    state.briefing={date:'',events:'',emails:'',report:'',reportDate:'',...state.briefing};
     function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
     function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
     document.getElementById('today').textContent=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
@@ -119,7 +137,7 @@
     function renderSettings(){document.getElementById('module-settings').innerHTML=MODULES.map(m=>'<label class="toggle-row"><span><strong>'+m.icon+' '+m.name+'</strong><br><span class="muted">'+m.desc+'</span></span><input type="checkbox" data-module="'+m.id+'" '+(state.modules[m.id]?'checked':'')+' aria-label="Activer '+m.name+'"></label>').join('');document.querySelectorAll('[data-module]').forEach(el=>el.addEventListener('change',()=>{state.modules[el.dataset.module]=el.checked;save();render()}))}
     function renderRooms(){document.getElementById('rooms').innerHTML=state.rooms.map((r,i)=>'<div class="room"><div class="room-head"><strong>'+esc(r.name)+'</strong><button class="btn danger" data-remove-room="'+i+'">Retirer</button></div><div class="fields"><div><label for="status-'+i+'">État</label><input id="status-'+i+'" type="text" data-room-status="'+i+'" value="'+esc(r.status)+'"></div><div><label for="next-'+i+'">Prochaine étape</label><input id="next-'+i+'" type="text" data-room-next="'+i+'" value="'+esc(r.next)+'"></div></div></div>').join('');document.getElementById('house-note').value=state.houseNote;document.querySelectorAll('[data-room-status]').forEach(el=>el.addEventListener('change',()=>{state.rooms[Number(el.dataset.roomStatus)].status=el.value;save();renderHome()}));document.querySelectorAll('[data-room-next]').forEach(el=>el.addEventListener('change',()=>{state.rooms[Number(el.dataset.roomNext)].next=el.value;save();renderHome()}));document.querySelectorAll('[data-remove-room]').forEach(el=>el.addEventListener('click',()=>{state.rooms.splice(Number(el.dataset.removeRoom),1);save();renderRooms();renderHome()}))}
     function renderChores(){const host=document.getElementById('chores');host.innerHTML=state.chores.length?state.chores.map((c,i)=>'<label class="routine"><input type="checkbox" data-chore-done="'+i+'" '+(c.done?'checked':'')+'><span style="flex:1"><strong style="'+(c.done?'text-decoration:line-through;color:#718076':'')+'">'+esc(c.title)+'</strong><br><span class="small">'+esc(c.frequency||'Sans fréquence définie')+'</span></span><button type="button" class="btn danger" data-remove-chore="'+i+'">Retirer</button></label>').join(''):'<div class="empty">Ta liste est vide pour le moment. Ajoute des tâches quand tu le souhaites.</div>';document.querySelectorAll('[data-chore-done]').forEach(el=>el.addEventListener('change',()=>{state.chores[Number(el.dataset.choreDone)].done=el.checked;save();renderChores()}));document.querySelectorAll('[data-remove-chore]').forEach(el=>el.addEventListener('click',()=>{state.chores.splice(Number(el.dataset.removeChore),1);save();renderChores()}))}
-    function render(){renderHome();renderSettings();renderRooms();renderChores()}
+    function render(){renderHome();renderSettings();renderRooms();renderChores();renderBriefing()}
     function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));document.getElementById('page-'+name).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===name))}
     document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
     document.getElementById('add-room').addEventListener('click',()=>{const name=document.getElementById('new-room').value.trim();if(!name)return;state.rooms.push({name:name,status:document.getElementById('new-room-status').value.trim()||'À préciser',next:'À préciser'});document.getElementById('new-room').value='';document.getElementById('new-room-status').value='';save();renderRooms();renderHome()});
@@ -127,6 +145,45 @@
     document.getElementById('add-chore').addEventListener('click',()=>{const title=document.getElementById('new-chore').value.trim();if(!title)return;state.chores.push({title:title,frequency:document.getElementById('chore-frequency').value.trim(),done:false});document.getElementById('new-chore').value='';document.getElementById('chore-frequency').value='';save();renderChores()});
     document.getElementById('export-data').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='assistant-quotidien-sauvegarde.json';link.click();URL.revokeObjectURL(url)});
     document.getElementById('import-data').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{const imported=JSON.parse(await file.text());if(!imported||!Array.isArray(imported.rooms)||!Array.isArray(imported.chores)||!imported.modules)throw new Error('format');state={...structuredClone(initial),...imported,dayTasks:Array.isArray(imported.dayTasks)?imported.dayTasks:[]};save();render();event.target.value='';alert('Sauvegarde importée.')}catch(e){event.target.value='';alert('Ce fichier ne ressemble pas à une sauvegarde de l’assistant quotidien.')}});
+    function localDateValue(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+    function formatReportDate(value){const d=value?new Date(value+'T12:00:00'):new Date();return new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(d)}
+    function parseReportTime(value){const m=value.match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;const h=Number(m[1]),min=Number(m[2]);return h<24&&min<60?h*60+min:null}
+    function reportClock(minutes){return String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0')}
+    function makeBriefing(){
+      const date=document.getElementById('brief-date').value||localDateValue();
+      const eventText=document.getElementById('brief-events').value.trim();
+      const emailText=document.getElementById('brief-emails').value.trim();
+      state.briefing={...state.briefing,date:date,events:eventText,emails:emailText};
+      const rows=eventText?eventText.split(/\n+/).map(x=>x.trim()).filter(Boolean):[];
+      const events=[],unparsed=[];
+      rows.forEach(line=>{const m=line.match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s+(.+)$/);if(!m){unparsed.push(line);return}const start=parseReportTime(m[1]),end=parseReportTime(m[2]);if(start===null||end===null||end<=start){unparsed.push(line);return}events.push({start,end,title:m[3]})});
+      events.sort((a,b)=>a.start-b.start);
+      const out=['BILAN DU '+formatReportDate(date).toLocaleUpperCase('fr-FR'),'','AGENDA'];
+      if(events.length===0&&unparsed.length===0)out.push('Aucun rendez-vous renseigné dans l’application.');
+      events.forEach(e=>out.push(reportClock(e.start)+'–'+reportClock(e.end)+' · '+e.title));
+      const conflicts=[];let latest=null;
+      events.forEach(e=>{if(latest&&e.start<latest.end)conflicts.push(reportClock(e.start)+' · chevauchement entre « '+latest.title+' » et « '+e.title+' »');if(!latest||e.end>latest.end)latest=e});
+      if(conflicts.length)out.push('Conflits à vérifier : '+conflicts.join('; ')+'.');
+      const gaps=[];for(let i=1;i<events.length;i++){if(events[i].start>events[i-1].end)gaps.push(reportClock(events[i-1].end)+'–'+reportClock(events[i].start))}
+      if(gaps.length)out.push('Temps libres entre rendez-vous : '+gaps.join(', ')+'.');
+      if(unparsed.length)out.push('Horaires ou formats à préciser : '+unparsed.join(' ; ')+'.');
+      out.push('','GMAIL');
+      const categories={'urgent':[],'à traiter':[],'à lire plus tard':[],'à classer':[]};
+      emailText.split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(line=>{const m=line.match(/^(urgent|à traiter|a traiter|à lire plus tard|a lire plus tard)\s*[:–-]\s*(.+)$/i);if(!m){categories['à classer'].push(line);return}const key=m[1].toLowerCase().replace('a traiter','à traiter').replace('a lire plus tard','à lire plus tard');categories[key].push(m[2])});
+      let anyMail=false;Object.entries(categories).forEach(([key,items])=>{if(items.length){anyMail=true;out.push(key.charAt(0).toUpperCase()+key.slice(1)+' :');items.forEach(x=>out.push('• '+x))}});if(!anyMail)out.push('Aucun message renseigné.');
+      out.push('','RÉNOVATION');
+      if(state.rooms.length){out.push('État saisi :');state.rooms.forEach(r=>out.push('• '+r.name+' — '+(r.status||'statut à préciser')));const next=state.rooms.find(r=>r.next&&r.next.trim()&&r.next.trim().toLowerCase()!=='à préciser');out.push(next?'Prochaine étape notée : '+next.name+' — '+next.next:'Prochaine petite étape à préciser dans Projet maison.')}else out.push('Aucune pièce ni étape renseignée dans l’application.');
+      if(state.houseNote&&state.houseNote.trim())out.push('Notes et points à vérifier : '+state.houseNote.trim());
+      const todo=state.chores.filter(c=>!c.done);if(todo.length){out.push('','TÂCHES MÉNAGÈRES SAISIES :');todo.forEach(c=>out.push('• '+c.title+(c.frequency?' ('+c.frequency+')':'')))}
+      state.briefing.report=out.join('\n');state.briefing.reportDate=date;save();renderBriefing();
+    }
+    function renderBriefing(){const output=document.getElementById('brief-output');if(output)output.textContent=state.briefing.report||'Le bilan apparaîtra ici.';const house=document.getElementById('brief-house');if(house){house.innerHTML=state.rooms.length?state.rooms.map(r=>'<div class="room"><div class="room-head"><strong>'+esc(r.name)+'</strong><span class="pill">'+esc(r.status||'À préciser')+'</span></div><div class="muted">'+esc(r.next||'Prochaine étape à préciser')+'</div></div>').join(''):'<div class="empty">Aucun contexte maison saisi pour le moment.</div>';if(state.houseNote)house.innerHTML+='<p class="small">'+esc(state.houseNote)+'</p>'}}
+    document.getElementById('brief-date').value=state.briefing.date||localDateValue();
+    document.getElementById('brief-events').value=state.briefing.events||'';
+    document.getElementById('brief-emails').value=state.briefing.emails||'';
+    ['brief-date','brief-events','brief-emails'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{state.briefing.date=document.getElementById('brief-date').value;state.briefing.events=document.getElementById('brief-events').value;state.briefing.emails=document.getElementById('brief-emails').value;save()}));
+    document.getElementById('generate-brief').addEventListener('click',makeBriefing);
+    document.getElementById('copy-brief').addEventListener('click',async()=>{const value=state.briefing.report;if(!value){document.getElementById('brief-copy-status').textContent='Prépare d’abord le bilan.';return}try{await navigator.clipboard.writeText(value);document.getElementById('brief-copy-status').textContent='Bilan copié.'}catch(e){document.getElementById('brief-copy-status').textContent='La copie automatique n’est pas disponible sur ce navigateur.'}});
     render();
   </script>
   <script>
