@@ -128,7 +128,9 @@
     const initial={modules:{day:true,email:true,calendar:true,house:true,chores:true},rooms:[],chores:[],dayTasks:[],houseNote:'',briefing:{date:'',events:'',emails:'',report:'',reportDate:''}};
     const STORAGE_KEY='assistant-quotidien-v1';let state;
     try{state=JSON.parse(localStorage.getItem(STORAGE_KEY))||structuredClone(initial)}catch(e){state=structuredClone(initial)}
-    if(!Array.isArray(state.dayTasks))state.dayTasks=[];\n    if(!state.briefing||typeof state.briefing!=='object')state.briefing={date:'',events:'',emails:'',report:'',reportDate:''};\n    state.briefing={date:'',events:'',emails:'',report:'',reportDate:'',...state.briefing};
+    if(!Array.isArray(state.dayTasks))state.dayTasks=[];
+    if(!state.briefing||typeof state.briefing!=='object')state.briefing={date:'',events:'',emails:'',report:'',reportDate:''};
+    state.briefing={date:'',events:'',emails:'',report:'',reportDate:'',...state.briefing};
     function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
     function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
     document.getElementById('today').textContent=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
@@ -155,16 +157,16 @@
       const emailText=document.getElementById('brief-emails').value.trim();
       state.briefing={...state.briefing,date:date,events:eventText,emails:emailText};
       const rows=eventText?eventText.split(/\n+/).map(x=>x.trim()).filter(Boolean):[];
-      const events=[],unparsed=[];
-      rows.forEach(line=>{const m=line.match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s+(.+)$/);if(!m){unparsed.push(line);return}const start=parseReportTime(m[1]),end=parseReportTime(m[2]);if(start===null||end===null||end<=start){unparsed.push(line);return}events.push({start,end,title:m[3]})});
+      const events=[],unparsed=[],allDay=[];
+      rows.forEach(line=>{const allday=line.match(/^(?:toute la journée|journée entière)\s*[-:–]\s*(.+)$/i);if(allday){allDay.push(allday[1]);return}const m=line.match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s+(.+)$/);if(!m){unparsed.push(line);return}const start=parseReportTime(m[1]),end=parseReportTime(m[2]);if(start===null||end===null||end<=start){unparsed.push(line);return}events.push({start,end,title:m[3]})});
       events.sort((a,b)=>a.start-b.start);
       const out=['BILAN DU '+formatReportDate(date).toLocaleUpperCase('fr-FR'),'','AGENDA'];
       if(events.length===0&&unparsed.length===0)out.push('Aucun rendez-vous renseigné dans l’application.');
-      events.forEach(e=>out.push(reportClock(e.start)+'–'+reportClock(e.end)+' · '+e.title));
+      events.forEach(e=>out.push(reportClock(e.start)+'–'+reportClock(e.end)+' · '+e.title));allDay.forEach(title=>out.push('Toute la journée · '+title));
       const conflicts=[];let latest=null;
       events.forEach(e=>{if(latest&&e.start<latest.end)conflicts.push(reportClock(e.start)+' · chevauchement entre « '+latest.title+' » et « '+e.title+' »');if(!latest||e.end>latest.end)latest=e});
       if(conflicts.length)out.push('Conflits à vérifier : '+conflicts.join('; ')+'.');
-      const gaps=[];for(let i=1;i<events.length;i++){if(events[i].start>events[i-1].end)gaps.push(reportClock(events[i-1].end)+'–'+reportClock(events[i].start))}
+      const gaps=[];let previousEnd=events.length?events[0].end:null;for(let i=1;i<events.length;i++){if(events[i].start>previousEnd)gaps.push(reportClock(previousEnd)+'–'+reportClock(events[i].start));previousEnd=Math.max(previousEnd,events[i].end)}
       if(gaps.length)out.push('Temps libres entre rendez-vous : '+gaps.join(', ')+'.');
       if(unparsed.length)out.push('Horaires ou formats à préciser : '+unparsed.join(' ; ')+'.');
       out.push('','GMAIL');
@@ -174,6 +176,7 @@
       out.push('','RÉNOVATION');
       if(state.rooms.length){out.push('État saisi :');state.rooms.forEach(r=>out.push('• '+r.name+' — '+(r.status||'statut à préciser')));const next=state.rooms.find(r=>r.next&&r.next.trim()&&r.next.trim().toLowerCase()!=='à préciser');out.push(next?'Prochaine étape notée : '+next.name+' — '+next.next:'Prochaine petite étape à préciser dans Projet maison.')}else out.push('Aucune pièce ni étape renseignée dans l’application.');
       if(state.houseNote&&state.houseNote.trim())out.push('Notes et points à vérifier : '+state.houseNote.trim());
+      const priorities=state.dayTasks.filter(t=>!t.done);if(priorities.length){out.push('','PRIORITÉS DU JOUR SAISIES :');priorities.forEach(t=>out.push('• '+t.title))}
       const todo=state.chores.filter(c=>!c.done);if(todo.length){out.push('','TÂCHES MÉNAGÈRES SAISIES :');todo.forEach(c=>out.push('• '+c.title+(c.frequency?' ('+c.frequency+')':'')))}
       state.briefing.report=out.join('\n');state.briefing.reportDate=date;save();renderBriefing();
     }
